@@ -1,7 +1,4 @@
-// Recuperar reservas almacenadas en localStorage al iniciar la aplicación
-const reservasJSON = localStorage.getItem("reservas");
-const reservas = reservasJSON ? JSON.parse(reservasJSON) : {};
-
+const reservas = {};
 let reservasMostradas = false;
 let horariosMostrados = false;
 let menuDiv; // Variable para almacenar el contenedor del menú
@@ -51,8 +48,6 @@ async function mostrarhorarios() {
                 const seleccionhorario = horarios[i];
                 // Cerrar el contenedor de horarios
                 horariosDiv.style.display = "none";
-                // Mostrar nuevamente el contenedor del menú
-                menuDiv.style.display = "block";
                 resolve(seleccionhorario);
             };
             horariosDiv.appendChild(button);
@@ -65,20 +60,20 @@ async function mostrarhorarios() {
 async function reservarcanchas() {
     // Mostrar los horarios solo si no se han mostrado antes
     if (!horariosMostrados) {
-        // Ocultar el contenedor del menú temporalmente
-        menuDiv.style.display = "none";
         const nuevoHorario = await mostrarhorarios(); // Esperar la selección del horario
         horariosMostrados = true;
         if (nuevoHorario) {
             const numeroreserva = Object.keys(reservas).length + 1;
             reservas[numeroreserva] = nuevoHorario;
             mostrarMensaje(`Has reservado una cancha para el horario ${nuevoHorario}. Número de reserva: ${numeroreserva}`);
-            // Almacenar las reservas en localStorage después de la modificación
-            almacenarReservas();
-            // Mostrar el menú nuevamente
-            menuDiv.style.display = "block";
         }
     }
+}
+
+function mostrarMensaje(mensaje) {
+    const mensajeDiv = document.createElement("div");
+    mensajeDiv.textContent = mensaje;
+    document.body.appendChild(mensajeDiv);
 }
 
 async function mostrarreservas() {
@@ -122,8 +117,6 @@ async function modificarreserva() {
                 // Modificar la reserva
                 reservas[reservaAModificar] = nuevoHorario;
                 mostrarMensaje(`Reserva #${reservaAModificar} modificada. Nuevo horario: ${nuevoHorario}`);
-                // Almacenar las reservas en localStorage después de la modificación
-                almacenarReservas();
             } else {
                 mostrarMensaje("Reserva no modificada.");
             }
@@ -142,7 +135,7 @@ async function modificarreserva() {
     document.body.appendChild(seleccionDiv);
 }
 
-async function cancelarreserva() {
+function cancelarreserva() {
     // Mostrar las reservas
     mostrarreservas();
     
@@ -165,8 +158,6 @@ async function cancelarreserva() {
             // Eliminar la reserva
             delete reservas[reservaACancelar];
             mostrarMensaje(`Reserva #${reservaACancelar} cancelada correctamente.`);
-            // Almacenar las reservas en localStorage después de la modificación
-            almacenarReservas();
         } else {
             mostrarMensaje("Número de reserva inválido. Por favor, introduce un número de reserva válido.");
         }
@@ -182,11 +173,4 @@ async function cancelarreserva() {
     document.body.appendChild(seleccionDiv);
 }
 
-// Almacenar las reservas en localStorage cada vez que se modifiquen
-function almacenarReservas() {
-    const reservasJSON = JSON.stringify(reservas);
-    localStorage.setItem("reservas", reservasJSON);
-}
-
-// Al iniciar la aplicación, mostrar el menú
 mostrarmenu();

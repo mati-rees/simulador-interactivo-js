@@ -51,8 +51,6 @@ async function mostrarhorarios() {
                 const seleccionhorario = horarios[i];
                 // Cerrar el contenedor de horarios
                 horariosDiv.style.display = "none";
-                // Mostrar nuevamente el contenedor del menú
-                menuDiv.style.display = "block";
                 resolve(seleccionhorario);
             };
             horariosDiv.appendChild(button);
@@ -65,8 +63,6 @@ async function mostrarhorarios() {
 async function reservarcanchas() {
     // Mostrar los horarios solo si no se han mostrado antes
     if (!horariosMostrados) {
-        // Ocultar el contenedor del menú temporalmente
-        menuDiv.style.display = "none";
         const nuevoHorario = await mostrarhorarios(); // Esperar la selección del horario
         horariosMostrados = true;
         if (nuevoHorario) {
@@ -75,8 +71,6 @@ async function reservarcanchas() {
             mostrarMensaje(`Has reservado una cancha para el horario ${nuevoHorario}. Número de reserva: ${numeroreserva}`);
             // Almacenar las reservas en localStorage después de la modificación
             almacenarReservas();
-            // Mostrar el menú nuevamente
-            menuDiv.style.display = "block";
         }
     }
 }
@@ -190,3 +184,5 @@ function almacenarReservas() {
 
 // Al iniciar la aplicación, mostrar el menú
 mostrarmenu();
+
+
