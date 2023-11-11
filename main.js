@@ -1,17 +1,42 @@
-<<<<<<< HEAD
 // Recuperar reservas almacenadas en localStorage al iniciar la aplicación
 const reservasJSON = localStorage.getItem("reservas");
 const reservas = reservasJSON ? JSON.parse(reservasJSON) : {};
+console.log(reservas);
 
 let reservasMostradas = false;
 let horariosMostrados = false;
 let menuDiv; // Variable para almacenar el contenedor del menú
 
-function limpiarMenu() {
-    // Remover el contenedor del menú si existe
-    if (menuDiv) {
-        document.body.removeChild(menuDiv);
+// Función para almacenar reservas en el servidor y localmente
+async function almacenarReservas() {
+    const url = 'https://tu-servidor.com/api/guardarReservas';
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reservas),
+    };
+
+    try {
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error('Error al almacenar reservas en el servidor');
+
+        console.log('Reservas almacenadas con éxito en el servidor');
+    } catch (error) {
+        console.error(error.message);
     }
+
+    // También puedes seguir almacenando las reservas localmente
+    const reservasJSON = JSON.stringify(reservas);
+    localStorage.setItem('reservas', reservasJSON);
+}
+
+// Resto del código sin modificaciones significativas
+
+function limpiarMenu() {
+    // Remover el contenedor del menú si tiene un padre
+    menuDiv && menuDiv.parentNode && menuDiv.parentNode.removeChild(menuDiv);
 }
 
 function mostrarMensaje(mensaje) {
@@ -30,37 +55,34 @@ function mostrarmenu() {
     menuDiv = document.createElement("div");
     menuDiv.innerHTML = `
         <p>Selecciona una opción:</p>
-        <button onclick="reservarcanchas()">1. Reservar canchas</button>
-        <button onclick="mostrarreservas()">2. Mostrar reservas</button>
-        <button onclick="modificarreserva()">3. Modificar reserva</button>
-        <button onclick="cancelarreserva()">4. Cancelar reserva</button>
-        <button onclick="salir()">5. Salir</button>`;
+        <button class="boton-menu" onclick="reservarcanchas()">1. Reservar canchas</button>
+        <button class="boton-menu" onclick="mostrarreservas()">2. Mostrar reservas</button>
+        <button class="boton-menu" onclick="modificarreserva()">3. Modificar reserva</button>
+        <button class="boton-menu" onclick="cancelarreserva()">4. Cancelar reserva</button>`;
     document.body.appendChild(menuDiv);
 }
 
 async function mostrarhorarios() {
-    return new Promise(resolve => {
-        const horarios = ['09:00 a 10:00', '11:00 a 12:00', '13:00 a 14:00', '15:00 a 16:00', '17:00 a 18:00', '19:00 a 20:00', '21:00 a 22:00'];
+    const horariosOptions = {
+        "09:00 a 10:00": "09:00 a 10:00",
+        "11:00 a 12:00": "11:00 a 12:00",
+        "13:00 a 14:00": "13:00 a 14:00",
+        "15:00 a 16:00": "15:00 a 16:00",
+        "17:00 a 18:00": "17:00 a 18:00",
+        "19:00 a 20:00": "19:00 a 20:00",
+        "21:00 a 22:00": "21:00 a 22:00"
+    };
 
-        const horariosDiv = document.createElement("div");
-        horariosDiv.innerHTML = "<p>Selecciona un horario:</p>";
-
-        for (let i = 0; i < horarios.length; i++) {
-            const button = document.createElement("button");
-            button.textContent = `${i + 1}. ${horarios[i]}`;
-            button.onclick = function() {
-                const seleccionhorario = horarios[i];
-                // Cerrar el contenedor de horarios
-                horariosDiv.style.display = "none";
-                // Mostrar nuevamente el contenedor del menú
-                menuDiv.style.display = "block";
-                resolve(seleccionhorario);
-            };
-            horariosDiv.appendChild(button);
-        }
-
-        document.body.appendChild(horariosDiv);
+    const { value: seleccionhorario } = await Swal.fire({
+        title: "Selecciona un horario:",
+        input: "select",
+        inputOptions: horariosOptions,
+        inputPlaceholder: "Selecciona un horario",
+        showCancelButton: true,
+        inputValidator: (value) => new Promise(resolve => value ? resolve() : resolve("Debes seleccionar un horario."))
     });
+
+    return seleccionhorario;
 }
 
 async function reservarcanchas() {
@@ -68,17 +90,51 @@ async function reservarcanchas() {
     if (!horariosMostrados) {
         // Ocultar el contenedor del menú temporalmente
         menuDiv.style.display = "none";
-        const nuevoHorario = await mostrarhorarios(); // Esperar la selección del horario
-        horariosMostrados = true;
+
+        // Mostrar SweetAlert2 para seleccionar el horario
+        const { value: nuevoHorario } = await Swal.fire({
+            title: "Reserva tu cancha",
+            input: "select",
+            inputOptions: {
+                Horarios: {
+                    "09:00 a 10:00": "09:00 a 10:00",
+                    "11:00 a 12:00": "11:00 a 12:00",
+                    "13:00 a 14:00": "13:00 a 14:00",
+                    "15:00 a 16:00": "15:00 a 16:00",
+                    "17:00 a 18:00": "17:00 a 18:00",
+                    "19:00 a 20:00": "19:00 a 20:00",
+                    "21:00 a 22:00": "21:00 a 22:00"
+                }
+            },
+            inputPlaceholder: "Selecciona un horario",
+            showCancelButton: true,
+            inputValidator: (value) => new Promise(resolve => value ? resolve() : resolve("Debes seleccionar un horario."))
+        });
+
+        // Mostrar el mensaje con el horario seleccionado
         if (nuevoHorario) {
             const numeroreserva = Object.keys(reservas).length + 1;
             reservas[numeroreserva] = nuevoHorario;
             mostrarMensaje(`Has reservado una cancha para el horario ${nuevoHorario}. Número de reserva: ${numeroreserva}`);
+
+            // Crear el botón "Volver al menú principal"
+            const volverButton = document.createElement("button");
+            volverButton.textContent = "Volver al menu principal";
+            volverButton.classList.add("boton-volver");
+            volverButton.onclick = mostrarmenu; // Agregar el manejador de eventos
+
+            // Agregar el botón al DOM
+            document.body.appendChild(volverButton);
+
             // Almacenar las reservas en localStorage después de la modificación
             almacenarReservas();
             // Mostrar el menú nuevamente
             menuDiv.style.display = "block";
+        } else {
+            mostrarMensaje("Reserva no realizada.");
         }
+
+        horariosMostrados = true;
     }
 }
 
@@ -90,8 +146,16 @@ async function mostrarreservas() {
             listareservas += `Reserva #${numeroreserva}: ${reservas[numeroreserva]}\n`;
         }
         mostrarMensaje(listareservas);
+
+        // Crear el botón "Volver al menú principal"
+        const botonVolver = document.createElement("button");
+        botonVolver.textContent = "Volver al menú principal";
+        botonVolver.classList.add("boton-volver"); // Agrega una clase al botón
+        botonVolver.addEventListener("click", mostrarmenu);
+        document.body.appendChild(botonVolver);
+
         // Actualizar la variable reservasMostradas para indicar que las reservas han sido mostradas
-        reservasMostradas = true;
+
     } else {
         mostrarMensaje("Las reservas ya han sido mostradas.");
     }
@@ -100,195 +164,94 @@ async function mostrarreservas() {
 async function modificarreserva() {
     // Mostrar las reservas
     mostrarreservas();
-    
-    // Crear un contenedor para la selección de reserva
-    const seleccionDiv = document.createElement("div");
-    seleccionDiv.innerHTML = "<p>Introduce el número de reserva que deseas modificar:</p>";
-    
-    // Crear un input para ingresar el número de reserva
-    const inputReserva = document.createElement("input");
-    inputReserva.type = "number";
-    inputReserva.min = "1";
-    
-    // Crear un botón para confirmar la selección
-    const botonConfirmar = document.createElement("button");
-    botonConfirmar.textContent = "Confirmar";
-    botonConfirmar.onclick = async function() {
-        const reservaAModificar = parseInt(inputReserva.value);
-        // Verificar si la reserva existe
-        if (reservas[reservaAModificar]) {
-            // Esperar la selección del nuevo horario
-            const nuevoHorario = await mostrarhorarios();
-            if (nuevoHorario) {
-                // Modificar la reserva
-                reservas[reservaAModificar] = nuevoHorario;
-                mostrarMensaje(`Reserva #${reservaAModificar} modificada. Nuevo horario: ${nuevoHorario}`);
-                // Almacenar las reservas en localStorage después de la modificación
-                almacenarReservas();
-            } else {
-                mostrarMensaje("Reserva no modificada.");
-            }
+
+    // Obtener todas las reservas como opciones para el usuario
+    const opcionesReservas = {};
+    for (const numeroreserva in reservas) {
+        opcionesReservas[numeroreserva] = `Reserva #${numeroreserva}: ${reservas[numeroreserva]}`;
+    }
+
+    // Mostrar SweetAlert2 para obtener el número de reserva a modificar
+    const { value: reservaAModificar } = await Swal.fire({
+        title: "Selecciona una reserva a modificar:",
+        input: "select",
+        inputOptions: opcionesReservas,
+        inputPlaceholder: "Selecciona una reserva",
+        showCancelButton: true,
+        inputValidator: (value) => new Promise(resolve => value ? resolve() : resolve("Debes seleccionar una reserva."))
+    });
+
+    // Convertir el número de reserva a entero
+    const numeroReserva = parseInt(reservaAModificar);
+
+    // Verificar si el número de reserva es válido y existe en las reservas
+    if (numeroReserva && reservas[numeroReserva]) {
+        // Mostrar SweetAlert2 para seleccionar el nuevo horario
+        const { value: nuevoHorario } = await Swal.fire({
+            title: "Selecciona un nuevo horario:",
+            input: "select",
+            inputOptions: {
+                "09:00 a 10:00": "09:00 a 10:00",
+                "11:00 a 12:00": "11:00 a 12:00",
+                "13:00 a 14:00": "13:00 a 14:00",
+                "15:00 a 16:00": "15:00 a 16:00",
+                "17:00 a 18:00": "17:00 a 18:00",
+                "19:00 a 20:00": "19:00 a 20:00",
+                "21:00 a 22:00": "21:00 a 22:00"
+            },
+            inputPlaceholder: "Selecciona un horario",
+            showCancelButton: true,
+            inputValidator: (value) => new Promise(resolve => value ? resolve() : resolve("Debes seleccionar un horario."))
+        });
+
+        if (nuevoHorario) {
+            // Modificar la reserva
+            reservas[numeroReserva] = nuevoHorario;
+            mostrarMensaje(`Reserva #${numeroReserva} modificada. Nuevo horario: ${nuevoHorario}`);
+            // Almacenar las reservas en localStorage después de la modificación
+            almacenarReservas();
         } else {
-            mostrarMensaje("Número de reserva inválido. Por favor, introduce un número de reserva válido.");
+            mostrarMensaje("Reserva no modificada.");
         }
-        // Eliminar el contenedor de selección
-        seleccionDiv.remove();
-    };
-    
-    // Agregar elementos al contenedor de selección
-    seleccionDiv.appendChild(inputReserva);
-    seleccionDiv.appendChild(botonConfirmar);
-    
-    // Mostrar el contenedor de selección en el cuerpo del documento
-    document.body.appendChild(seleccionDiv);
+    } else {
+        mostrarMensaje("Número de reserva inválido o no existe. Por favor, selecciona una reserva válida.");
+    }
 }
 
 async function cancelarreserva() {
     // Mostrar las reservas
     mostrarreservas();
-    
-    // Crear un contenedor para la selección de reserva a cancelar
-    const seleccionDiv = document.createElement("div");
-    seleccionDiv.innerHTML = "<p>Introduce el número de reserva que deseas cancelar:</p>";
-    
-    // Crear un input para ingresar el número de reserva a cancelar
-    const inputReserva = document.createElement("input");
-    inputReserva.type = "number";
-    inputReserva.min = "1";
-    
-    // Crear un botón para confirmar la selección de reserva a cancelar
-    const botonConfirmar = document.createElement("button");
-    botonConfirmar.textContent = "Confirmar";
-    botonConfirmar.onclick = function() {
-        const reservaACancelar = parseInt(inputReserva.value);
-        // Verificar si la reserva existe
-        if (reservas[reservaACancelar]) {
-            // Eliminar la reserva
-            delete reservas[reservaACancelar];
-            mostrarMensaje(`Reserva #${reservaACancelar} cancelada correctamente.`);
-            // Almacenar las reservas en localStorage después de la modificación
-            almacenarReservas();
-        } else {
-            mostrarMensaje("Número de reserva inválido. Por favor, introduce un número de reserva válido.");
-        }
-        // Eliminar el contenedor de selección
-        seleccionDiv.remove();
-    };
-    
-    // Agregar elementos al contenedor de selección
-    seleccionDiv.appendChild(inputReserva);
-    seleccionDiv.appendChild(botonConfirmar);
-    
-    // Mostrar el contenedor de selección en el cuerpo del documento
-    document.body.appendChild(seleccionDiv);
-}
 
-// Almacenar las reservas en localStorage cada vez que se modifiquen
-function almacenarReservas() {
-    const reservasJSON = JSON.stringify(reservas);
-    localStorage.setItem("reservas", reservasJSON);
+    // Obtener todas las reservas como opciones para el usuario
+    const opcionesReservas = {};
+    for (const numeroreserva in reservas) {
+        opcionesReservas[numeroreserva] = `Reserva #${numeroreserva}: ${reservas[numeroreserva]}`;
+    }
+
+    // Mostrar SweetAlert2 para obtener el número de reserva a cancelar
+    const { value: reservaACancelar } = await Swal.fire({
+        title: "Selecciona una reserva a cancelar:",
+        input: "select",
+        inputOptions: opcionesReservas,
+        inputPlaceholder: "Selecciona una reserva",
+        showCancelButton: true,
+        inputValidator: (value) => new Promise(resolve => value ? resolve() : resolve("Debes seleccionar una reserva."))
+    });
+
+    // Convertir el número de reserva a entero
+    const numeroReserva = parseInt(reservaACancelar);
+
+    // Verificar si el número de reserva es válido y existe en las reservas
+    if (numeroReserva && reservas[numeroReserva]) {
+        // Eliminar la reserva
+        delete reservas[numeroReserva];
+        mostrarMensaje(`Reserva #${numeroReserva} cancelada correctamente.`);
+        // Almacenar las reservas en localStorage después de la modificación
+        almacenarReservas();
+    } else {
+        mostrarMensaje("Número de reserva inválido o no existe. Por favor, selecciona una reserva válida.");
+    }
 }
 
 // Al iniciar la aplicación, mostrar el menú
 mostrarmenu();
-=======
-alert("¡Bienvenido al sistema de arriendo de canchas!");
-
-const reservas = {};
-
-function mostrarMenu() {
-    let opcion;
-    do {
-        opcion = prompt(
-            "Selecciona una opción:\n\n1. Reservar canchas\n2. Mostrar reservas\n3. Modificar reserva\n4. Cancelar reserva\n5. Salir"
-        );
-
-        switch (opcion) {
-            case "1":
-                reservarCanchas();
-                break;
-            case "2":
-                mostrarReservas();
-                break;
-            case "3":
-                modificarReserva();
-                break;
-            case "4":
-                cancelarReserva();
-                break;
-            case "5":
-                alert("¡Hasta luego! Vuelve pronto.");
-                break;
-            default:
-                alert("Por favor selecciona una opción válida");
-        }
-    } while (opcion !== "5");
-}
-
-function mostrarHorarios() {
-    const horarios = [
-        "09:00 a 10:00",
-        "11:00 a 12:00",
-        "13:00 a 14:00",
-        "15:00 a 16:00",
-        "17:00 a 18:00",
-        "19:00 a 20:00",
-        "21.00 a 22:00"
-    ];
-
-    let horariosListado = "Selecciona un horario:\n\n";
-    for (let i = 0; i < horarios.length; i++) {
-        horariosListado += `${i + 1}. ${horarios[i]}\n`;
-    }
-
-    const seleccionHorario = parseInt(prompt(horariosListado));
-    if (seleccionHorario >= 1 && seleccionHorario <= horarios.length) {
-        return horarios[seleccionHorario - 1];
-    } else {
-        alert("Opción de horario inválida. Por favor, selecciona un horario válido.");
-        return mostrarHorarios();
-    }
-}
-
-function reservarCanchas() {
-    const horarioSeleccionado = mostrarHorarios();
-    const numeroReserva = Object.keys(reservas).length + 1;
-    reservas[numeroReserva] = horarioSeleccionado;
-    alert(`Has reservado una cancha para el horario ${horarioSeleccionado}. Número de reserva: ${numeroReserva}`);
-}
-
-function mostrarReservas() {
-    let listaReservas = "Reservas:\n\n";
-    for (const numeroReserva in reservas) {
-        listaReservas += `Reserva #${numeroReserva}: ${reservas[numeroReserva]}\n`;
-    }
-    alert(listaReservas);
-}
-
-function modificarReserva() {
-    mostrarReservas();
-    const numeroReservaModificar = parseInt(prompt("Introduce el número de reserva que deseas modificar:\n"));
-
-    if (reservas[numeroReservaModificar]) {
-        const nuevoHorario = mostrarHorarios();
-        reservas[numeroReservaModificar] = nuevoHorario;
-        alert(`Reserva #${numeroReservaModificar} modificada. Nuevo horario: ${nuevoHorario}`);
-    } else {
-        alert("Número de reserva inválido. Por favor, introduce un número de reserva válido.");
-    }
-}
-
-function cancelarReserva() {
-    mostrarReservas();
-    const numeroReservaCancelar = parseInt(prompt("Introduce el número de reserva que deseas cancelar:\n"));
-
-    if (reservas[numeroReservaCancelar]) {
-        delete reservas[numeroReservaCancelar];
-        alert(`Reserva #${numeroReservaCancelar} cancelada correctamente.`);
-    } else {
-        alert("Número de reserva inválido. Por favor, introduce un número de reserva válido.");
-    }
-}
-
-mostrarMenu();
->>>>>>> ff81f8e692c62cf154938c3104c4202aa4eb20e0

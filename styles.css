@@ -1,0 +1,27 @@
+.boton-volver {
+    margin-top: 20px;
+}
+
+div{
+    font-family: "Roboto", sans-serif;
+}
+/* Estilo para la clase 'boton-menu' */
+.boton-menu {
+    font-family: "Roboto", sans-serif;
+    /* O cualquier otra fuente que desees utilizar */
+    font-size: 16px; /* Tamaño de fuente */
+    color: #ffffff; /* Color del texto */
+    background-color: #007bffbd; /* Color de fondo del botón */
+    padding: 10px 20px; /* Espaciado interno del botón */
+    border: none; /* Sin borde */
+    border-radius: 5px; /* Bordes redondeados */
+    cursor: pointer; /* Cambia el cursor al pasar el mouse */
+    margin: 5px; /* Margen entre botones */
+}
+
+/* Cambia el color del texto al pasar el mouse sobre el botón */
+.boton-menu:hover {
+    color: #ffffff;
+    text-decoration: none; /* Elimina el subrayado del texto al pasar el mouse */
+    background-color: #0057b3d2; /* Cambia el color de fondo al pasar el mouse */
+}
